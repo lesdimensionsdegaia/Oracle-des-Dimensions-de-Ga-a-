@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Gaïa - Les 42 Esprits de la Nature</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Quicksand:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #f39c12;
+            --accent: #00ffcc;
+            --bg-dark: #010502;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0fff0;
+            font-family: 'Quicksand', sans-serif;
+            height: 100vh; margin: 0;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a1f0a 0%, #010502 100%);
+        }
+
+        .oracle-card {
+            width: 350px; height: 620px;
+            background: var(--glass);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            border-radius: 30px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+            display: flex; flex-direction: column;
+            padding: 25px; text-align: center;
+            cursor: pointer; position: relative;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .image-viewport {
+            width: 100%; height: 300px;
+            border-radius: 20px; overflow: hidden;
+            border: 2px solid var(--accent);
+            background: #111; position: relative;
+        }
+
+        .image-viewport img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: opacity 0.3s;
+        }
+
+        .shuffling img { filter: brightness(1.4) contrast(1.2) blur(2px); opacity: 0.7; }
+
+        h1 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.4rem; color: var(--gold);
+            margin: 15px 0 5px; text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        .spirit-type {
+            font-size: 0.7rem; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .wisdom-text {
+            font-size: 0.85rem; line-height: 1.4;
+            min-height: 85px; color: #fff;
+        }
+
+        .challenge-box {
+            background: rgba(243, 156, 18, 0.1);
+            border-left: 3px solid var(--gold);
+            padding: 8px; font-size: 0.75rem;
+            font-weight: bold; color: var(--gold);
+            display: none; margin-top: 5px;
+            animation: fadeIn 1s forwards;
+        }
+
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: var(--accent); box-shadow: 0 0 15px var(--accent);
+            animation: scan 4s infinite linear; display: none;
+        }
+
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #btn-init {
+            position: absolute; top: 15px; right: 15px;
+            background: var(--gold); border: none; padding: 12px;
+            border-radius: 50%; cursor: pointer; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="btn-init" onclick="initAudio()">🔊</button>
+    <audio id="bg-music" loop><source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" type="audio/mpeg"></audio>
+
+    <div class="oracle-card" onclick="toggleOracle()">
+        <div class="scan-line" id="scanner"></div>
+        <div class="image-viewport" id="viewport">
+            <img id="spirit-img" src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1000" alt="Nature">
+        </div>
+        <h1 id="spirit-name">L'ORACLE DE GAÏA</h1>
+        <div class="spirit-type" id="spirit-type">Appuie pour invoquer</div>
+        <div class="wisdom-text" id="wisdom">Mélange des deux guides : 42 esprits t'attendent pour te guider aujourd'hui.</div>
+        <div class="challenge-box" id="challenge"></div>
+    </div>
+
+    <script>
+        const esprits = [
+            { nom: "Laétia la Licorne", type: "Chakra Couronne", sagesse: "Tes rêves sont des portails sacrés. Connecte-toi aux étoiles.", defi: "Visualise une lumière bleu nuit avant de t'endormir.", img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=500" },
+            { nom: "Clara la Fée", type: "Chakra Cœur", sagesse: "La magie fleurit là où règne la vérité et la sincérité.", defi: "Exprime un sentiment vrai à un proche aujourd'hui.", img: "https://images.unsplash.com/photo-1496715976403-7e36dc43f17b?q=80&w=500" },
+            { nom: "Saceu'dans le Nain", type: "Chakra Racine", sagesse: "La persévérance transforme la pierre en or. Reste ancré.", defi: "Termine une tâche que tu as commencée il y a longtemps.", img: "https://images.unsplash.com/photo-1590013330451-385d5395856b?q=80&w=500" },
+            { nom: "Rirolarme le Lutin", type: "Chakra Plexus", sagesse: "Le rire est la plus haute des protections vibratoires.", defi: "Trouve une occasion de rire aux éclats aujourd'hui.", img: "https://images.unsplash.com/photo-1534527489986-3e339174671c?q=80&w=500" },
+            { nom: "Bouruh le Troll", type: "Protecteur", sagesse: "Ta force réside dans ton calme face à l'adversité.", defi: "Pratique le silence face à une petite provocation.", img: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=500" },
+            { nom: "Éliennesse la Nymphe", type: "Élément Eau", sagesse: "La fluidité est la clé du bonheur. Laisse couler tes peines.", defi: "Passe du temps près d'une source d'eau ou écoute-la.", img: "https://images.unsplash.com/photo-1503756234508-e32369269deb?q=80&w=500" },
+            { nom: "Trouvetou le Gnome", type: "Élément Terre", sagesse: "Ressens les trésors cachés dans chaque grain de sable.", defi: "Ramasse un caillou et ressens sa vibration terrestre.", img: "https://images.unsplash.com/photo-1590424744257-fdb03ed78b0d?q=80&w=500" },
+            { nom: "Rodolphe l'Elfe", type: "Visionnaire", sagesse: "Regarde au-delà des apparences. Vois l'aura de la vie.", defi: "Observe la nature sans juger, juste en contemplant.", img: "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=500" },
+            { nom: "Feudutonner le Dragon", type: "Puissance Feu", sagesse: "Ta volonté est un feu sacré. Utilise-le avec sagesse.", defi: "Prends une décision courageuse que tu évitais.", img: "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?q=80&w=500" },
+            { nom: "Aqua l'Ondine", type: "Pureté Émotionnelle", sagesse: "Nettoie ton cœur comme l'eau vive purifie le lit du ruisseau.", defi: "Bois de l'eau en conscience en imaginant qu'elle te purifie.", img: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=500" },
+            { nom: "Sifflette la Sylphe", type: "Liberté Air", sagesse: "Sois léger comme le vent. Ne t'attache pas au passé.", defi: "Respire profondément 3 fois face au vent.", img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=500" },
+            { nom: "Chauffequipeut la Salamandre", type: "Alchimiste", sagesse: "Transforme tes colères en énergie de création.", defi: "Fais une activité créative (dessin, cuisine, écriture).", img: "https://images.unsplash.com/photo-1504198453319-5ce911bafcde?q=80&w=500" },
+            { nom: "Sirenne Estabella", type: "Vibration Sonore", sagesse: "Le son est créateur. Surveille tes paroles aujourd'hui.", defi: "Chante un mantra ou une chanson qui te rend heureux.", img: "https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=500" },
+            { nom: "Pégase Stellia", type: "Élévation", sagesse: "Prends de la hauteur. Tes problèmes sont petits vus du ciel.", defi: "Imagine que tu voles au-dessus de ta ville ce soir.", img: "https://images.unsplash.com/photo-1601633515456-43d9a7d36a87?q=80&w=500" },
+            { nom: "La Vouivre", type: "Énergie Vitale", sagesse: "Le serpent de terre circule en toi. Ressens ta force.", defi: "Fais des étirements lents pour sentir ton énergie circuler.", img: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=500" },
+            { nom: "Le Triton", type: "Souveraineté", sagesse: "Tu es le maître de ton propre royaume intérieur.", defi: "Affirme une limite claire avec quelqu'un aujourd'hui.", img: "https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=500" },
+            { nom: "La Néréide", type: "Intuition", sagesse: "Écoute les marées de ton intuition. Elles ne trompent pas.", defi: "Suis ta première impression aujourd'hui.", img: "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=500" },
+            { nom: "Le Déva", type: "Conscience Supérieure", sagesse: "Chaque être vivant a une âme. Honore la vie.", defi: "Prends soin d'une plante ou d'un animal aujourd'hui.", img: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?q=80&w=500" },
+            { nom: "La Famille Ouhra", type: "Petit Peuple", sagesse: "L'entraide est la force du petit peuple. Sois solidaire.", defi: "Aide quelqu'un sans qu'il te le demande.", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=500" },
+            { nom: "Déesse Dana", type: "Terre Mère", sagesse: "Tu es un enfant de la Terre. Elle te nourrit et t'aime.", defi: "Remercie Gaïa pour le repas que tu manges.", img: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=500" },
+            // Ajout des 22 autres esprits issus des mélanges et spécialités
+            { nom: "Le Gnome Doré", type: "Abondance", sagesse: "L'argent est une énergie. Laisse-la circuler avec joie.", defi: "Donne une petite pièce ou fais un geste généreux.", img: "https://images.unsplash.com/photo-1533418264835-98fe1e49c215?q=80&w=500" },
+            { nom: "La Dryade", type: "Ancrage Profond", sagesse: "Tes racines sont ta force. Ne les oublie jamais.", defi: "Imagine des racines sortir de tes pieds pendant 2 min.", img: "https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=500" },
+            { nom: "Le Korrigan", type: "Gardien de l'Ombre", sagesse: "Tes peurs cachent souvent tes plus grands talents.", defi: "Identifie une peur et souris-lui.", img: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=500" },
+            { nom: "La Dame Blanche", type: "Clarté", sagesse: "La vérité est une lumière qui dissipe le brouillard.", defi: "Sois honnête avec toi-même sur un sujet précis.", img: "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?q=80&w=500" },
+            { nom: "L'Elfe Sylvain", type: "Communication", sagesse: "Écoute le vent dans les feuilles, il porte des réponses.", defi: "Passe 10 minutes en forêt ou dans un parc.", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=500" },
+            { nom: "Le Farfadet", type: "Spontanéité", sagesse: "Sortir des sentiers battus est le meilleur moyen d'apprendre.", defi: "Change un petit détail de ta routine aujourd'hui.", img: "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?q=80&w=500" },
+            { nom: "La Naïade", type: "Sensibilité", sagesse: "Ta sensibilité est ton super-pouvoir, pas une faiblesse.", defi: "Autorise-toi à ressentir une émotion pleinement.", img: "https://images.unsplash.com/photo-1437482226633-67d93a6043af?q=80&w=500" },
+            { nom: "Le Kobold", type: "Pragmatisme", sagesse: "Un pas après l'autre, tu arriveras au sommet.", defi: "Découpe un grand projet en 3 toutes petites étapes.", img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=500" },
+            { nom: "L'Esprit des Pics", type: "Ambition", sagesse: "Ne crains pas les sommets. Tu as les ailes pour y aller.", defi: "Fixe-toi un objectif ambitieux pour le mois prochain.", img: "https://images.unsplash.com/photo-1464273534816-79f2b2ba61ee?q=80&w=500" },
+            { nom: "La Pixie", type: "Curiosité", sagesse: "Le monde est plein de merveilles pour celui qui sait regarder.", defi: "Apprends une chose nouvelle aujourd'hui.", img: "https://images.unsplash.com/photo-1518131336040-84a1a5b82772?q=80&w=500" },
+            { nom: "Le Brownie", type: "Gratitude", sagesse: "Remercie pour ce que tu as, et tu recevras davantage.", defi: "Note 3 choses pour lesquelles tu es reconnaissant ce soir.", img: "https://images.unsplash.com/photo-1465447142348-e9952c393450?q=80&w=500" },
+            { nom: "Le Sidhe", type: "Élégance", sagesse: "Agis avec grâce et noblesse en toute circonstance.", defi: "Fais un geste de courtoisie inattendu.", img: "https://images.unsplash.com/photo-1470058869958-2a77a67c023d?q=80&w=500" },
+            { nom: "La Hamadryade", type: "Patience", sagesse: "L'arbre ne pousse pas plus vite si on tire sur ses feuilles.", defi: "Attends ton tour ou un résultat sans t'impatienter.", img: "https://images.unsplash.com/photo-1440778303588-435521a205bc?q=80&w=500" },
+            { nom: "Le Gobelin", type: "Adaptation", sagesse: "Si la porte est fermée, passe par la fenêtre.", defi: "Trouve une alternative à un blocage actuel.", img: "https://images.unsplash.com/photo-1516233501032-24346006e8b2?q=80&w=500" },
+            { nom: "La Sylvanienne", type: "Héritage", sagesse: "Tes ancêtres marchent à tes côtés. Honore-les.", defi: "Regarde une vieille photo ou pense à un aïeul.", img: "https://images.unsplash.com/photo-1501183638710-841dd1904471?q=80&w=500" },
+            { nom: "Le Leprechaun", type: "Optimisme", sagesse: "Cherche l'arc-en-ciel même sous la pluie.", defi: "Trouve un point positif dans une situation difficile.", img: "https://images.unsplash.com/photo-1431036101490-e6af39155b04?q=80&w=500" },
+            { nom: "La Mami Wata", type: "Mystère", sagesse: "Certaines choses doivent rester secrètes pour grandir.", defi: "Garde un beau projet pour toi aujourd'hui.", img: "https://images.unsplash.com/photo-1513553404607-988bf2703777?q=80&w=500" },
+            { nom: "L'Elfe Noir", type: "Profondeur", sagesse: "C'est dans l'obscurité que l'on voit le mieux les étoiles.", defi: "Médite 5 minutes dans le noir complet.", img: "https://images.unsplash.com/photo-1502481851512-e9e2529bbbf9?q=80&w=500" },
+            { nom: "La Banshee", type: "Transformation", sagesse: "Laisse mourir le vieux moi pour laisser naître le nouveau.", defi: "Jette un objet inutile ou tourne une page mentale.", img: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=500" },
+            { nom: "Le Grand Deva", type: "Unité", sagesse: "Tu es une cellule du corps de Gaïa. Sois-en digne.", defi: "Fais une action bénéfique pour ton environnement.", img: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=500" },
+            { nom: "L'Ondin de Roche", type: "Résilience", sagesse: "Comme l'eau sur la pierre, ta persistance gagnera.", defi: "Continue un effort difficile sans lâcher.", img: "https://images.unsplash.com/photo-1505242859278-5803d3044a5a?q=80&w=500" },
+            { nom: "La Fée des Neiges", type: "Pureté", sagesse: "Garde ton cœur pur, les esprits t'entendront mieux.", defi: "Fais une action désintéressée aujourd'hui.", img: "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?q=80&w=500" }
+        ];
+
+        let isRunning = false;
+        let shuffleInterval;
+        const music = document.getElementById('bg-music');
+        const synth = window.speechSynthesis;
+        music.volume = 0.15;
+
+        function initAudio() { music.play(); document.getElementById('btn-init').style.display = 'none'; }
+
+        function toggleOracle() {
+            initAudio();
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('scanner').style.display = 'block';
+                document.getElementById('viewport').classList.add('shuffling');
+                document.getElementById('challenge').style.display = 'none';
+                document.getElementById('wisdom').innerText = "Vortex énergétique en cours...";
+                
+                shuffleInterval = setInterval(() => {
+                    const rand = esprits[Math.floor(Math.random() * esprits.length)];
+                    document.getElementById('spirit-img').src = rand.img;
+                    document.getElementById('spirit-name').innerText = rand.nom;
+                }, 60);
+            } else {
+                isRunning = false;
+                clearInterval(shuffleInterval);
+                document.getElementById('scanner').style.display = 'none';
+                document.getElementById('viewport').classList.remove('shuffling');
+
+                const final = esprits[Math.floor(Math.random() * esprits.length)];
+                document.getElementById('spirit-img').src = final.img;
+                document.getElementById('spirit-name').innerText = final.nom;
+                document.getElementById('spirit-type').innerText = final.type;
+                document.getElementById('wisdom').innerText = final.sagesse;
+                document.getElementById('challenge').innerText = "DÉFI : " + final.defi;
+                document.getElementById('challenge').style.display = 'block';
+
+                speak(`${final.nom}. ${final.type}. ${final.sagesse}. Ton défi est le suivant : ${final.defi}`);
+            }
+        }
+
+        function speak(text) {
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.volume = 1.0;
+            utterance.rate = 0.95;
+            synth.speak(utterance);
+        }
+    </script>
+</body>
+</html>
